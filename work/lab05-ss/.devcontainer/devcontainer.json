@@ -1,0 +1,24 @@
+{
+    "name": "ROS 2 Development",
+    "image": "osrf/ros:jazzy-desktop",
+    "runArgs": [
+        "--network=ardupilot-network",
+        "--name=ros2_dev_container",
+        "--hostname=ros2-dev"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+                "python.terminal.activateEnvironment": true
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-iot.vscode-ros"
+            ]
+        }
+    },
+    "postCreateCommand": "chmod +x scripts/installation_script.sh && sudo chmod +x start.sh && scripts/installation_script.sh"
+    //"postCreateCommand": "apt-get update && apt-get install -y python3-venv && python3 -m venv .venvd && .venvd/bin/pip install --upgrade pip && echo 'source /opt/ros/jazzy/setup.bash' >> ~/.bashrc"
+}

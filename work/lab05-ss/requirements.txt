@@ -1,0 +1,34 @@
+# Global options
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+dronekit==2.9.2
+pymavlink
+pyserial
+opencv-python
+pandas<3
+matplotlib
+scipy
+seaborn
+torch
+torchvision
+ultralytics
+ultralytics-thop
+requests
+python-dotenv
+pyproj
+shapely
+geopy
+pillow
+pycryptodomex
+PyOpenGL
+simplejpeg
+jsonschema
+filelock
+psutil
+tqdm
+zmq
+paho-mqtt
+future
+velodyne-decoder
+scikit-learn
+opencv-python-headless

@@ -1,0 +1,15 @@
+.env
+!.env.example
+.venv/
+ss_venv/
+venv*/
+__pycache__/
+*.pyc
+.DS_Store
+logs/
+run/
+*.tlog*
+*.BIN
+*.pt
+*.passwd
+work/ardupilot/

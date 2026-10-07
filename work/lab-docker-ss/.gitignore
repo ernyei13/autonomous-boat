@@ -1,0 +1,4 @@
+.env
+mosquitto/config/mosquitto.passwd
+ardupilot_data_*
+iot_data*

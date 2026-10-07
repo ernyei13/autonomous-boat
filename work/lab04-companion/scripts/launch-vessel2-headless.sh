@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../maritime26/scripts/env.sh"
+
+LAB04_ROOT="$(cd "$MARITIME_ROOT/../lab04-companion" && pwd)"
+reset_flag=""
+if [[ "${RESET:-0}" == "1" ]]; then
+  reset_flag="-w"
+fi
+
+mkdir -p "$LAB04_ROOT/run/vessel2"
+cd "$LAB04_ROOT/run/vessel2"
+
+exec python "$ARDUPILOT_ROOT/Tools/autotest/sim_vehicle.py" -N ${reset_flag:+$reset_flag} -v Rover --instance 2 --sysid 3 -L Syros3 \
+  --add-param-file="$MARITIME_ROOT/custom-parms/boat.parm" \
+  --out=udp:127.0.0.1:14550 \
+  --out=udp:127.0.0.1:14571

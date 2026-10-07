@@ -1,0 +1,13 @@
+# The Meltemi, recreated as the two things a motor boat actually feels:
+# a surface current that carries the boat, and waves that rock it.
+
+# Surface current: about 1.5 m/s (3 knots), setting from the north, so flowing south.
+SIM_TIDE_SPEED 1.5
+SIM_TIDE_DIR 0
+
+# Sea state: rocks the boat for realism; it does not move the boat anywhere.
+SIM_WAVE_ENABLE 1
+SIM_WAVE_AMP 1.5
+SIM_WAVE_LENGTH 20
+SIM_WAVE_SPEED 6
+SIM_WAVE_DIR 0

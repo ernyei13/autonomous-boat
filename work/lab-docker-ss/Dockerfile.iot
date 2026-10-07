@@ -1,0 +1,61 @@
+FROM python:3.11-slim
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
+ENV PYTHONUNBUFFERED=1
+
+ARG REPO_URL
+ARG BRANCH=main
+ARG GITHUB_TOKEN
+ARG ASV_ID
+ARG ASV_MAVLINK
+ARG CODE=/app/src/main.py
+
+ARG MQTT_USERNAME
+ARG MQTT_PASSWORD
+ARG MQTT_BROKER
+ARG MQTT_PORT
+
+RUN echo "Using REPO_URL: ${REPO_URL}"
+RUN echo "Using BRANCH: ${BRANCH}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends\
+    git \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+        git clone --branch ${BRANCH} --depth 1 https://${GITHUB_TOKEN}@${REPO_URL#https://} . ; \
+    else \
+        git clone --branch ${BRANCH} --depth 1 ${REPO_URL} . ; \
+    fi
+
+RUN python3 -m venv .venv 
+
+RUN .venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel
+# RUN .venv/bin/pip install -r requirements-macos.txt
+RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
+# RUN .venv/bin/pip install future
+
+RUN sed -i 's/\bcollections.MutableMapping\b/collections.abc.MutableMapping/g' .venv/lib/python3.11/site-packages/dronekit/__init__.py    
+# ... (keep all the installs above this) ...
+
+# SETUP ENVIRONMENT PARAMETERS
+ENV SAFE_FOLLOW_DISTANCE=10
+ENV TELEMETRY_INTERVAL=1
+
+ENV MAVLINK20='1'
+#MAVLINK20='1'
+ENV MAVLINK_DIALECT='ardupilotmega'
+
+ENV MQTT_USERNAME=${MQTT_USERNAME}
+ENV MQTT_PASSWORD=${MQTT_PASSWORD}
+ENV MQTT_BROKER=${MQTT_BROKER}
+ENV MQTT_PORT=${MQTT_PORT}
+ENV CODE=${CODE}
+
+# Use Shell form of CMD so it expands $VARIABLES at runtime
+CMD ["sh", "-c", "echo 'Connecting to: '$ASV_MAVLINK && /app/.venv/bin/python3 $CODE $ASV_ID $ASV_MAVLINK"]

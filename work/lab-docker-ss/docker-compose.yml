@@ -1,0 +1,184 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001" # WebSockets (optional, often used for web dashboards)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks:
+      - ardupilot-network
+    restart: unless-stopped
+
+  ardupilot-sitl-1:
+    image: lab-docker-ss-ardupilot-sitl
+    build:
+      context: .
+      dockerfile: Dockerfile.ardupilot
+    container_name: ardupilot-sitl-1
+    ports:
+      - "5760:5760"
+      - "5511:5501"
+    environment:
+      - SYSID_THISMAV=1
+      - VEHICLE_TYPE=Rover
+      - INSTANCE=0
+      - LOCATION=37.43043515,24.94171941,0,0
+      - MODEL=motorboat
+      - SPEEDUP=1
+    volumes:
+      - ./ardupilot_data_1:/ardupilot/data
+    networks:
+      - ardupilot-network
+    command: >
+      sh -c "echo 'SYSID_THISMAV 1' > /ardupilot/data/sysid.parm && \
+      rm -f /ardupilot/ardupilot/eeprom.bin && \
+      python3 /home/ardupilot/ardupilot/Tools/autotest/sim_vehicle.py -C \
+      --vehicle=$${VEHICLE_TYPE} \
+      --sysid=1 \
+      --instance=$${INSTANCE} \
+      -l $${LOCATION} \
+      --model=$${MODEL} \
+      --speedup=$${SPEEDUP} \
+      --no-rebuild \
+      --no-mavproxy \
+      --sim-address=0.0.0.0 \
+      --add-param-file=/ardupilot/data/sysid.parm \
+      -A \"--sysid 1\""
+
+  iot1:
+    image: lab-docker-ss-iot
+    build:
+      context: .
+      dockerfile: Dockerfile.iot
+      args:
+        REPO_URL: ${REPO_URL}
+        BRANCH: ${BRANCH}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        MQTT_USERNAME: ${MQTT_USERNAME}
+        MQTT_PASSWORD: ${MQTT_PASSWORD}
+        MQTT_BROKER: ${MQTT_BROKER}
+        MQTT_PORT: ${MQTT_PORT}
+        CODE: src/main.py
+    container_name: iot1
+    network_mode: "service:mavproxy"
+    depends_on:
+      - mavproxy
+      - mosquitto
+    restart: on-failure
+    environment:
+      - ASV_ID=ASV1
+      - ASV_MAVLINK=udp:127.0.0.1:14560
+    volumes:
+      - ./iot_data1:/app/iot_data
+    stdin_open: true
+    tty: true
+
+  ardupilot-sitl-2:
+    image: lab-docker-ss-ardupilot-sitl
+    build:
+      context: .
+      dockerfile: Dockerfile.ardupilot
+    container_name: ardupilot-sitl-2
+    ports:
+      - "5770:5760"
+      - "5521:5501"
+    environment:
+      - SYSID_THISMAV=2
+      - VEHICLE_TYPE=Rover
+      - INSTANCE=1
+      - LOCATION=37.43043515,24.94183275,0,0
+      - MODEL=motorboat
+      - SPEEDUP=1
+    volumes:
+      - ./ardupilot_data_2:/ardupilot/data
+    networks:
+      - ardupilot-network
+    command: >
+      sh -c "echo 'SYSID_THISMAV 2' > /ardupilot/data/sysid.parm && \
+      rm -f /ardupilot/ardupilot/eeprom.bin && \
+      python3 /home/ardupilot/ardupilot/Tools/autotest/sim_vehicle.py -C \
+      --vehicle=$${VEHICLE_TYPE} \
+      --sysid=2 \
+      --instance=$${INSTANCE} \
+      -l $${LOCATION} \
+      --model=$${MODEL} \
+      --speedup=$${SPEEDUP} \
+      --no-rebuild \
+      --no-mavproxy \
+      --sim-address=0.0.0.0 \
+      --add-param-file=/ardupilot/data/sysid.parm \
+      -A \"--sysid 2\""
+
+  iot2:
+    image: lab-docker-ss-iot
+    build:
+      context: .
+      dockerfile: Dockerfile.iot
+      args:
+        REPO_URL: ${REPO_URL}
+        BRANCH: ${BRANCH}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        MQTT_USERNAME: ${MQTT_USERNAME}
+        MQTT_PASSWORD: ${MQTT_PASSWORD}
+        MQTT_BROKER: ${MQTT_BROKER}
+        MQTT_PORT: ${MQTT_PORT}
+        CODE: src/main.py
+    container_name: iot2
+    network_mode: "service:mavproxy"
+    depends_on:
+      - mavproxy
+      - mosquitto
+    restart: on-failure
+    environment:
+      - ASV_ID=ASV2
+      - ASV_MAVLINK=udp:127.0.0.1:14570
+    volumes:
+      - ./iot_data2:/app/iot_data
+    stdin_open: true
+    tty: true
+
+  mavproxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.mavproxy
+    container_name: mavproxy-controller
+    ports:
+      - "16000:16000" # Swarm Aggregator
+      - "16010:16010" # vessel1
+      - "16011:16011" # vessel2
+      - "14550:14550/udp" # GCS Global
+      - "14551:14551/udp" # DroneKit
+      # - "8080:8080" # HTTP API
+      # - "1883:1883" # MQTT
+      - "16001:16001" # Vehicle 1 TCP
+      - "14560:14560/udp" # Vehicle 1 UDP
+      - "16002:16002" # Vehicle 2 TCP
+      - "14570:14570/udp" # Vehicle 2 UDP
+    depends_on:
+      - ardupilot-sitl-1
+      - ardupilot-sitl-2
+    networks:
+      - ardupilot-network
+    volumes:
+      - ./mavproxy_logs:/var/log/mavproxy
+      - ./start.sh:/home/mavproxy/start.sh
+    stdin_open: true
+    tty: true
+
+networks:
+  ardupilot-network:
+    driver: bridge
+    name: ardupilot-network # ENFORCE NAME
+
+volumes:
+  mavproxy_logs:
+  ardupilot_data_1:
+  iot_data1:
+  ardupilot_data_2:
+  iot_data2:
+  mosquitto_data:
+  mosquitto_log:
